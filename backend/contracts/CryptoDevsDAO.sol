@@ -15,7 +15,7 @@ interface ICryptoDevsNFT {
     function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
 }                      
 
-contract CryptoDevsDAO{
+contract CryptoDevsDAO is Ownable{
     
     
     struct Proposal{
@@ -53,6 +53,11 @@ contract CryptoDevsDAO{
         require(proposals[proposalIndex].deadline > block.timestamp, "DEADLINE EXCEEDED");
         _;
     }
+    modifier inactiveProposalOnly(uint256 proposalIndex){
+        require(proposals[proposalIndex].deadline <= block.timestamp, "Proposal is in Active state ");
+        require(proposals[proposalIndex].executed == false, "Proposal Executed already");
+        _;
+    }
 
     function createProposal(uint256 _nftTokenId) external nftHolderOnly returns(uint256){
         require(nftMarketplace.available(_nftTokenId), "NFT NOT FOR SALE");
@@ -66,7 +71,42 @@ contract CryptoDevsDAO{
     function voteOnProposal(uint256 proposalIndex, Vote vote) external nftHolderOnly activeProposal(proposalIndex) {
         Proposal storage proposal = proposals[proposalIndex];
         uint256 voterNFTbalance = cryptoDevsNFT.balanceOf(msg.sender);
-        uint256 numVotes;
-        yyyy
+        uint256 numVotes= 0 ;
+        for(uint256 i=0; i<voterNFTbalance; i++){
+            uint256 tokenId = cryptoDevsNFT.tokenOfOwnerByIndex(msg.sender, i);
+            if(proposal.voters[tokenId] == false){
+                numVotes++;
+                proposal.voters[tokenId] = true;
+            }
+            require(numVotes>0, "Already voted");
+            if(vote == Vote.Yes){
+                proposal.yesVotes += numVotes;
+            }
+            else{
+                proposal.noVotes += numVotes;
+            }
+
+        }
     }
+
+    function executeProposal(uint256 proposalIndex) external nftHolderOnly inactiveProposalOnly(proposalIndex){
+        Proposal storage proposal = proposals[proposalIndex];
+        uint256 nftPrice = 0.1 ether;
+        if(proposal.yesVotes > proposal.noVotes){
+            require(address(this).balance >= nftPrice, "NOT ENOUGH FUNDS");            
+            nftMarketplace.purchase{value: nftPrice}(proposal.nftTokenId);
+        }
+        proposal.executed = true;
+    }
+
+    function  withdraw() external onlyOwner{
+        uint256 amount = address(this).balance;
+        require(amount > 0, "Nothing to withdraw");
+        (bool sent,) = payable(owner()).call{value: amount}("");
+        require(sent, "transaction failed");
+    }
+
+    receive() external payable {}
+
+    fallback() external payable {}
 }
