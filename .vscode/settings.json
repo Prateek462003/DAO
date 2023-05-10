@@ -1,0 +1,9 @@
+{
+    "emmet.includeLanguages": {
+        "javascript": "javascriptreact"
+     },
+    "solidity.remappings":["@openzeppelin/=C:/Users/prate/OneDrive/Desktop/WEB 3.0/dao/backend/node_modules/@openzeppelin/contract"],
+    "solidity.packageDefaultDependenciesContractsDirectory": "src",   
+    "solidity.packageDefaultDependenciesDirectory": "lib"
+}
+// C:\Users\prate\OneDrive\Desktop\WEB 3.0\dao\backend\node_modules\@openzeppelin
